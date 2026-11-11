@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#063a7a">
+<meta name="description" content="Pop the corporate buzzwords before they float away. Don't pop the sea friends.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Buzzword Bubbles">
+<meta property="og:description" content="Pop the corporate buzzwords before they float away. Don't pop the sea friends.">
+<title>Buzzword Bubbles</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --serif:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --cream:#F4FBFF;
+  --gold:#FFE27A;
+  --ink:#06365F;
+  --st:env(safe-area-inset-top,0px);
+  --sr:env(safe-area-inset-right,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+  --sl:env(safe-area-inset-left,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{
+  position:fixed;inset:0;width:100%;height:100%;overflow:hidden;
+  overscroll-behavior:none;background:#063a7a;color:var(--cream);
+  font-family:var(--sans);-webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;-webkit-text-size-adjust:100%;
+}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* ---------- HUD ---------- */
+#hud{
+  position:fixed;inset:0;pointer-events:none;
+  padding:calc(14px + var(--st)) calc(20px + var(--sr)) 0 calc(20px + var(--sl));
+  display:flex;justify-content:space-between;align-items:flex-start;
+  opacity:0;transition:opacity .4s ease;
+}
+#hud.show{opacity:1}
+#score{display:inline-block;transform-origin:left top;transition:transform .1s ease-out;font-family:var(--serif);font-weight:600;text-shadow:0 3px 0 rgba(4,58,110,.35);font-size:clamp(52px,11vw,76px);line-height:.95;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+#hudRight{display:flex;flex-direction:column;align-items:flex-end;gap:8px;padding-top:12px}
+#lives{display:flex;gap:9px;align-items:center}
+#lives::before{content:"Lives";font:600 10.5px var(--sans);letter-spacing:.2em;text-transform:uppercase;margin-right:4px}
+#lives i{
+  width:13px;height:13px;border-radius:50%;
+  border:1.5px solid rgba(244,251,255,.85);background:var(--cream);
+  transition:background .35s ease,border-color .35s ease;
+}
+#lives i.lost{background:transparent;border-color:rgba(244,251,255,.38)}
+#mult{font-family:var(--serif);font-style:normal;font-size:26px;line-height:1;color:var(--gold)}
+
+#levelLabel{
+  position:fixed;left:0;right:0;top:calc(22% + var(--st));text-align:center;pointer-events:none;
+  font-size:18px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(244,251,255,.96);text-shadow:0 2px 10px rgba(4,58,110,.8);opacity:0;transition:opacity .7s ease;
+}
+#levelLabel.show{opacity:1}
+
+#sound{
+  position:fixed;left:calc(14px + var(--sl));bottom:calc(12px + var(--sb));z-index:5;
+  background:rgba(4,58,110,.62);border:0;border-radius:999px;color:rgba(244,251,255,.92);cursor:pointer;
+  font:500 10.5px var(--sans);letter-spacing:.24em;text-transform:uppercase;
+  padding:10px 14px;display:flex;align-items:center;gap:8px;
+}
+#sound:hover,#sound:focus-visible{color:rgba(244,251,255,.9);outline:none}
+#sound svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#sound .waves{transition:opacity .2s}
+#sound.off .waves{opacity:0}
+#sound .slash{opacity:0}
+#sound.off .slash{opacity:1}
+
+/* ---------- Cards ---------- */
+.overlay{
+  position:fixed;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;
+  padding:calc(16px + var(--st)) calc(16px + var(--sr)) calc(16px + var(--sb)) calc(16px + var(--sl));
+  opacity:0;pointer-events:none;transition:opacity .5s ease;
+}
+.overlay.show{opacity:1;pointer-events:auto}
+.card{
+  width:min(100%,400px);max-height:100%;text-align:center;
+  padding:38px 30px 30px;border-radius:30px;
+  background:rgba(4,58,110,.46);
+  border:1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter:blur(22px) saturate(125%);backdrop-filter:blur(22px) saturate(125%);
+  box-shadow:0 30px 80px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.14);
+  transform:translateY(10px);transition:transform .6s cubic-bezier(.2,.7,.2,1);
+}
+.overlay.show .card{transform:none}
+.eyebrow{font-size:10.5px;font-weight:500;letter-spacing:.32em;text-transform:uppercase;color:rgba(244,251,255,.58)}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(42px,12vw,56px);line-height:1;margin:12px 0 26px;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--gold)}
+.rules{list-style:none;text-align:left;display:grid;gap:14px;margin:0 auto 30px;width:fit-content;max-width:100%}
+.rules li{display:flex;align-items:center;gap:14px;font-size:14.5px;color:rgba(244,251,255,.88);line-height:1.25}
+.sb{
+  flex:none;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.62);
+  background:
+    radial-gradient(circle at 31% 27%,rgba(255,255,255,.6) 0,rgba(255,255,255,0) 30%),
+    radial-gradient(circle,rgba(var(--t),.07) 35%,rgba(var(--t),.4) 100%);
+}
+.sb.lilac{--t:200,240,255}
+.sb.blush{--t:150,226,255}
+.sb.goldb{border-color:#fff;background:radial-gradient(circle at 31% 27%,#fff8c9 0,#ffd84a 50%,#f0a81e 100%)}
+.sb.white{border-color:#fff;background:radial-gradient(circle at 35% 30%,#fff 0,#eaf8ff 60%,#bfe6ff 100%);box-shadow:0 0 14px rgba(255,255,255,.75)}
+.btn{
+  appearance:none;border:1px solid var(--gold);background:var(--gold);color:var(--ink);cursor:pointer;
+  font:600 12px var(--sans);letter-spacing:.26em;text-transform:uppercase;
+  padding:16px 34px;border-radius:999px;min-width:190px;
+  transition:transform .2s ease,background .2s ease,color .2s ease;
+}
+.btn:hover{background:#fff0b0}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.btn.ghost{background:transparent;color:var(--cream);border-color:rgba(244,251,255,.36)}
+.btn.ghost:hover{background:rgba(255,255,255,.07)}
+.final{font-family:var(--serif);font-size:clamp(76px,22vw,104px);line-height:.95;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+.rank{font-family:var(--serif);font-style:normal;font-size:clamp(24px,7vw,30px);line-height:1.1;color:var(--gold);margin-bottom:24px}
+.stats{display:flex;justify-content:center;gap:44px;margin-bottom:28px}
+.stats b{display:block;font-family:var(--serif);font-weight:400;font-size:34px;line-height:1.1;margin-top:4px}
+.actions{display:flex;flex-direction:column;align-items:center;gap:12px}
+
+@media (max-height:560px){
+  .card{padding:20px 26px 18px;width:min(100%,520px)}
+  h1{font-size:36px;margin:6px 0 14px}
+  .rules{gap:8px;margin-bottom:16px;grid-template-columns:1fr 1fr;column-gap:22px}
+  .rules li{font-size:13px}
+  .sb{width:24px;height:24px}
+  .btn{padding:12px 28px}
+  .final{font-size:58px}
+  .rank{font-size:22px;margin-bottom:10px}
+  .stats{margin-bottom:14px}
+  .stats b{font-size:26px}
+  .actions{flex-direction:row;justify-content:center}
+  .btn{min-width:150px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important}
+  .card{transform:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="game" aria-label="Buzzword Bubbles game"></canvas>
+
+<div id="hud" aria-hidden="true">
+  <div id="score">0</div>
+  <div id="hudRight">
+    <div id="lives"><i></i><i></i><i></i></div>
+    <div id="mult">&times;1</div>
+  </div>
+</div>
+<div id="levelLabel" aria-hidden="true"></div>
+
+<div class="overlay show" id="startScreen">
+  <div class="card">
+    <div class="eyebrow">Pop the jargon. Save the sea.</div>
+    <h1>Buzzword <em>Bubbles</em></h1>
+    <ul class="rules">
+      <li><span class="sb lilac"></span>Pop every buzzword you see</li>
+      <li><span class="sb blush"></span>Let one escape, lose a life</li>
+      <li><span class="sb goldb"></span>Don't pop the sea friends</li>
+      <li><span class="sb white"></span>The pearl clears the screen</li>
+    </ul>
+    <button class="btn" id="playBtn" type="button">Play</button>
+  </div>
+</div>
+
+<div class="overlay" id="overScreen">
+  <div class="card">
+    <div class="eyebrow">Final score</div>
+    <div class="final" id="finalScore">0</div>
+    <div class="rank" id="rank"></div>
+    <div class="stats">
+      <div class="eyebrow">Level<b id="finalLevel">1</b></div>
+      <div class="eyebrow">Best<b id="bestScore">0</b></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="againBtn" type="button">Play again</button>
+      <button class="btn ghost" id="copyBtn" type="button">Copy score</button>
+    </div>
+  </div>
+</div>
+
+<button id="sound" type="button" aria-pressed="true" aria-label="Toggle sound">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4z"/>
+    <path class="waves" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/>
+    <path class="slash" d="M16 9.5l5 5M21 9.5l-5 5"/>
+  </svg>
+  <span id="soundLabel">Sound on</span>
+</button>
+
+<script>
+'use strict';
+
+/* ================= Content ================= */
+const BUZZWORDS = [
+  'circling back','just following up','per my last email','hope this finds you well','quick question',
+  'touch base','synergy','low-hanging fruit','move the needle','deep dive','bandwidth','take this offline',
+  'thought leader','game changer','10x','leverage','pivot','disrupt','AI-powered','at scale','best-in-class',
+  'seamless','robust','value add','win-win','action items','stakeholders','deliverables','KPIs','ROI','ASAP',
+  'EOD','ping me','loop me in','hop on a call','quick sync',"let's align",'going forward','as discussed',
+  'gentle reminder','friendly nudge','bumping this','any updates?','thoughts?','pick your brain',
+  'put a pin in it','north star','growth hacking','ecosystem','paradigm shift',
+  'think outside the box','at the end of the day','new normal','pain point','secret sauce','quick win',
+  'big picture','next steps','reach out','on my radar',
+  'top of mind','buy-in','empower','frictionless','holistic','scalable','mission critical',
+  'hit the ground running','in the weeds','heavy lifting','giving 110%','humbled to announce',
+  'excited to share','thrilled to announce','agentic','just checking in','does that make sense?',
+  "let's connect",'quick call?','15 minutes?','revolutionary','cutting-edge','world-class','unlock',
+  'supercharge','streamline','best practice','key takeaways',
+  'no-brainer','value prop'
+
+];
+const PLAIN = [
+  'Yes','No',"Here's the price",'Signed','Done','Thanks','I was wrong','It ships Friday',
+  "I don't know",'Approved','Not now','Paid','Fixed',"I'll call you",'Agreed'
+];
+const RANKS = [
+  [0,   'Still circling back'],
+  [20,  'Meeting Survivor'],
+  [60,  'Jargon Slayer'],
+  [140, 'Straight Talker'],
+  [280, 'Chief No-Nonsense Officer']
+];
+const TINTS = {
+  aqua: [170,232,255],
+  foam: [220,246,255],
+  sky:  [140,210,255],
+  mint: [165,242,232]
+};
+const TINT_KEYS = Object.keys(TINTS);
+
+/* ================= Tunables ================= */
+const START_INTERVAL = 0.8, MIN_INTERVAL = 0.26;
+const START_SPEED = 115, MAX_SPEED = 720;
+const LEVEL_SECONDS = 6;
+const MAX_BUBBLES = 14;
+const GOLD_CHANCE = 1 / 8;
+const MIN_D = 90, MAX_D = 130;
+const BASE = 130, PAD = 6;
+const SANS = '"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+const SERIF = '"Fredoka","Trebuchet MS",system-ui,sans-serif';
+
+/* ================= Setup ================= */
+const $ = id => document.getElementById(id);
+const cv = $('game'), ctx = cv.getContext('2d');
+const mctx = document.createElement('canvas').getContext('2d');
+const el = {
+  hud: $('hud'), score: $('score'), lives: [...$('lives').children], mult: $('mult'),
+  level: $('levelLabel'), start: $('startScreen'), over: $('overScreen'),
+  finalScore: $('finalScore'), rank: $('rank'), finalLevel: $('finalLevel'), best: $('bestScore'),
+  sound: $('sound'), soundLabel: $('soundLabel'), copy: $('copyBtn')
+};
+
+let W = 0, H = 0, DPR = 0;
+let bgCanvas = null, baseSprites = {}, glowSprite = null;
+
+const rmq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+let reduced = !!(rmq && rmq.matches);
+if (rmq) {
+  const onRm = e => { reduced = e.matches; };
+  if (rmq.addEventListener) rmq.addEventListener('change', onRm); else if (rmq.addListener) rmq.addListener(onRm);
+}
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function store(key, val) {
+  try {
+    if (val === undefined) return localStorage.getItem(key);
+    localStorage.setItem(key, val);
+  } catch (e) {}
+  return null;
+}
+
+/* ================= State ================= */
+let state = 'start';            // start | play | over
+let bubbles = [], pops = [], rings = [], drops = [], floats = [], shards = [], shake = 0;
+let score = 0, lives = 3, streak = 0, mult = 1, level = 1;
+let best = parseInt(store('bb_best'), 10) || 0;
+let T = 0, playT = 0, spawnT = 0, replyT = 20;
+let interval = START_INTERVAL, speed = START_SPEED;
+let vignette = 0, levelTimer = 0, overTimer = 0;
+let bag = [], plainBag = [];
+
+/* ================= Sprites ================= */
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h));
+  return c;
+}
+
+function buildBackground() {
+  bgCanvas = makeCanvas(cv.width, cv.height);
+  const g = bgCanvas.getContext('2d'), w = bgCanvas.width, h = bgCanvas.height;
+  const lg = g.createLinearGradient(0, 0, 0, h);
+  lg.addColorStop(0, '#56d6f8');
+  lg.addColorStop(0.3, '#1c9be0');
+  lg.addColorStop(0.7, '#0a5fb0');
+  lg.addColorStop(1, '#063a7a');
+  g.fillStyle = lg; g.fillRect(0, 0, w, h);
+  // sunlight falling through the water
+  for (let i = 0; i < 6; i++) {
+    const x0 = w * (0.06 + 0.17 * i), sp = w * 0.05, lean = w * 0.12, hh = h * 0.78;
+    const rg = g.createLinearGradient(0, 0, 0, hh);
+    rg.addColorStop(0, 'rgba(255,255,255,0.17)');
+    rg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = rg;
+    g.beginPath(); g.moveTo(x0 - sp * 0.4, 0); g.lineTo(x0 + sp * 0.4, 0);
+    g.lineTo(x0 + lean + sp * 1.7, hh); g.lineTo(x0 + lean - sp * 1.7, hh); g.closePath(); g.fill();
+  }
+  // seabed
+  const sh = h * 0.09, u = Math.max(w, h) / 100;
+  g.lineCap = 'round';
+  [[0.07, 0.2, '#1fae80'], [0.14, 0.14, '#2bcf96'], [0.87, 0.17, '#2bcf96'], [0.94, 0.23, '#1fae80']].forEach(([px, ph, col]) => {
+    const x = w * px, top = h - h * ph;
+    g.strokeStyle = col; g.lineWidth = u * 1.2;
+    g.beginPath(); g.moveTo(x, h - sh * 0.4);
+    g.bezierCurveTo(x - u * 3, h - h * ph * 0.4, x + u * 3, h - h * ph * 0.7, x - u, top); g.stroke();
+  });
+  g.fillStyle = '#ff8fb3';
+  [[0.72, 0.9, 2.4], [0.75, 1.25, 2], [0.69, 1.2, 1.7]].forEach(([px, k, r]) => {
+    g.beginPath(); g.arc(w * px, h - sh * k, u * r, 0, Math.PI * 2); g.fill();
+  });
+  g.fillStyle = '#ecd6a4';
+  g.beginPath(); g.moveTo(0, h); g.lineTo(0, h - sh * 0.7);
+  g.quadraticCurveTo(w * 0.25, h - sh * 1.3, w * 0.5, h - sh * 0.75);
+  g.quadraticCurveTo(w * 0.78, h - sh * 0.3, w, h - sh);
+  g.lineTo(w, h); g.closePath(); g.fill();
+}
+
+function sphereSprite(kind, rgb) {
+  const size = BASE + PAD * 2;
+  const c = makeCanvas(size * DPR, size * DPR), g = c.getContext('2d');
+  g.scale(DPR, DPR);
+  const cx = size / 2, cy = size / 2, R = BASE / 2;
+  g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2);
+  let hl = 0.6;
+  if (kind === 'glass') {
+    const t = rgb.join(',');
+    g.fillStyle = 'rgba(3,52,104,0.24)'; g.fill();         // keeps text readable over the glow
+    const body = g.createRadialGradient(cx, cy, R * 0.15, cx, cy, R);
+    body.addColorStop(0, `rgba(${t},0.06)`);
+    body.addColorStop(0.7, `rgba(${t},0.13)`);
+    body.addColorStop(1, `rgba(${t},0.36)`);
+    g.fillStyle = body; g.fill();
+    const rim = g.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+    rim.addColorStop(0, 'rgba(255,255,255,0.95)');
+    rim.addColorStop(1, `rgba(${t},0.45)`);
+    g.strokeStyle = rim; g.lineWidth = 2; g.stroke();
+  } else if (kind === 'gold') {
+    const body = g.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.05, cx, cy, R);
+    body.addColorStop(0, '#fff6dc');
+    body.addColorStop(0.5, '#ecd29a');
+    body.addColorStop(1, '#c49d55');
+    g.fillStyle = body; g.fill();
+    g.strokeStyle = 'rgba(255,246,222,0.95)'; g.lineWidth = 1.4; g.stroke();
+    hl = 0.5;
+  } else {
+    const body = g.createRadialGradient(cx - R * 0.25, cy - R * 0.3, R * 0.05, cx, cy, R);
+    body.addColorStop(0, '#ffffff');
+    body.addColorStop(0.65, '#eefaff');
+    body.addColorStop(1, '#bfe6ff');
+    g.fillStyle = body; g.fill();
+    g.strokeStyle = '#ffffff'; g.lineWidth = 1.6; g.stroke();
+    hl = 0;
+  }
+  if (hl) {
+    g.save();
+    g.translate(cx - R * 0.36, cy - R * 0.42);
+    g.rotate(-0.65); g.scale(1, 0.6);
+    const h = g.createRadialGradient(0, 0, 0, 0, 0, R * 0.36);
+    h.addColorStop(0, `rgba(255,255,255,${hl})`);
+    h.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = h;
+    g.beginPath(); g.arc(0, 0, R * 0.36, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+  return c;
+}
+
+function buildBaseSprites() {
+  baseSprites = { gold: sphereSprite('gold'), reply: sphereSprite('reply') };
+  for (const k of TINT_KEYS) baseSprites[k] = sphereSprite('glass', TINTS[k]);
+  const s = 128;
+  glowSprite = makeCanvas(s, s);
+  const g = glowSprite.getContext('2d');
+  const rg = g.createRadialGradient(s / 2, s / 2, s * 0.18, s / 2, s / 2, s / 2);
+  rg.addColorStop(0, 'rgba(255,255,255,0.55)');
+  rg.addColorStop(0.55, 'rgba(220,245,255,0.16)');
+  rg.addColorStop(1, 'rgba(220,245,255,0)');
+  g.fillStyle = rg; g.fillRect(0, 0, s, s);
+}
+
+function fontFor(kind, fs) {
+  if (kind === 'gold') return `400 ${fs}px ${SERIF}`;
+  if (kind === 'reply') return `600 ${fs}px ${SANS}`;
+  return `500 ${fs}px ${SANS}`;
+}
+
+/* Wrap text into at most 3 lines that fit inside the circle; never below 13px. */
+function fitText(text, d, kind) {
+  const R = d / 2 * 0.86, words = text.split(' ');
+  const sizes = kind === 'gold' ? [25, 23, 21, 19, 17, 15] : kind === 'reply' ? [15, 14, 13] : [18, 17, 16, 15, 14, 13];
+  for (const fs of sizes) {
+    mctx.font = fontFor(kind, fs);
+    const lh = fs * 1.2;
+    for (let n = 1; n <= 3; n++) {
+      const lines = []; let wi = 0, ok = true;
+      for (let i = 0; i < n; i++) {
+        const ye = Math.abs((i - (n - 1) / 2) * lh) + fs * 0.55;
+        if (ye >= R) { ok = false; break; }
+        const maxW = 2 * Math.sqrt(R * R - ye * ye);
+        let line = '';
+        while (wi < words.length) {
+          const t = line ? line + ' ' + words[wi] : words[wi];
+          if (mctx.measureText(t).width <= maxW) { line = t; wi++; } else break;
+        }
+        if (!line) { ok = false; break; }
+        lines.push(line);
+      }
+      if (ok && wi === words.length) return { fs, lh, lines };
+    }
+  }
+  return null;
+}
+
+function layoutBubble(b) {
+  if (b.kind === 'gold') { b.r = b.d / 2; b.fit = null; return; }
+  let fit = null, d = b.d;
+  while (!(fit = fitText(b.text, d, b.kind)) && d < MAX_D) d = Math.min(MAX_D, d + 8);
+  if (!fit) fit = { fs: 13, lh: 15.6, lines: [b.text] };
+  b.d = d; b.r = d / 2; b.fit = fit;
+}
+
+function makeSprite(b) {
+  const size = b.d + PAD * 2;
+  const c = makeCanvas(size * DPR, size * DPR), g = c.getContext('2d');
+  g.scale(DPR, DPR);
+  const s = b.d / BASE, bs = (BASE + PAD * 2) * s, off = size / 2 - bs / 2;
+  g.drawImage(baseSprites[b.kind === 'reply' ? 'reply' : b.tint], off, off, bs, bs);
+  if (b.kind === 'gold') { drawCritter(g, b.critter, size / 2, size / 2 + b.d * 0.03, b.d * 0.29); b.sprite = c; b.size = size; return; }
+  const f = b.fit;
+  g.font = fontFor(b.kind, f.fs);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (b.kind === 'buzz') {
+    g.fillStyle = '#ffffff';
+    g.shadowColor = 'rgba(2,40,92,0.85)'; g.shadowBlur = 5 * DPR;
+  } else {
+    g.fillStyle = '#06365F';
+  }
+  const y0 = size / 2 - (f.lines.length - 1) / 2 * f.lh + f.fs * 0.04;
+  f.lines.forEach((ln, i) => g.fillText(ln, size / 2, y0 + i * f.lh));
+  b.sprite = c; b.size = size;
+}
+
+/* ================= Sea life ================= */
+const CRITTERS = ['puffer', 'octopus', 'crab', 'jelly', 'star'];
+const FISH_COLS = ['#ff9f6b', '#ffd84a', '#ff8fb3', '#8ff0d0', '#ffffff'];
+const TAU = Math.PI * 2;
+function face(g, cx, cy, s, eyeDx, eyeY) {
+  for (const sx of [-1, 1]) {
+    g.fillStyle = '#14283c'; g.beginPath(); g.arc(cx + sx * eyeDx, cy + eyeY, s * 0.14, 0, TAU); g.fill();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(cx + sx * eyeDx - s * 0.04, cy + eyeY - s * 0.05, s * 0.055, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,110,150,0.55)'; g.beginPath(); g.ellipse(cx + sx * (eyeDx + s * 0.2), cy + eyeY + s * 0.22, s * 0.12, s * 0.075, 0, 0, TAU); g.fill();
+  }
+  g.strokeStyle = '#14283c'; g.lineWidth = Math.max(1.2, s * 0.055); g.lineCap = 'round';
+  g.beginPath(); g.arc(cx, cy + eyeY + s * 0.12, s * 0.13, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+}
+function drawCritter(g, type, cx, cy, s) {
+  g.save(); g.lineJoin = 'round'; g.lineCap = 'round';
+  if (type === 'puffer') {
+    g.fillStyle = '#f2a71b';
+    g.beginPath(); g.moveTo(cx + s * 0.8, cy); g.lineTo(cx + s * 1.3, cy - s * 0.42); g.lineTo(cx + s * 1.3, cy + s * 0.42); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(cx - s * 0.25, cy - s * 0.85); g.lineTo(cx + s * 0.1, cy - s * 1.28); g.lineTo(cx + s * 0.4, cy - s * 0.8); g.closePath(); g.fill();
+    g.fillStyle = '#ffd84a'; g.beginPath(); g.arc(cx, cy, s, 0, TAU); g.fill();
+    g.fillStyle = '#fff3bf'; g.beginPath(); g.ellipse(cx - s * 0.05, cy + s * 0.48, s * 0.68, s * 0.4, 0, 0, TAU); g.fill();
+    face(g, cx - s * 0.12, cy, s, s * 0.38, -s * 0.15);
+  } else if (type === 'octopus') {
+    g.fillStyle = '#ff8fb3';
+    for (let i = -1.5; i <= 1.5; i++) { g.beginPath(); g.arc(cx + i * s * 0.5, cy + s * 0.72, s * 0.3, 0, TAU); g.fill(); }
+    g.beginPath(); g.arc(cx, cy - s * 0.12, s * 0.98, 0, TAU); g.fill();
+    face(g, cx, cy, s, s * 0.36, -s * 0.12);
+  } else if (type === 'crab') {
+    g.strokeStyle = '#e8503f'; g.lineWidth = s * 0.16;
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.moveTo(cx + sx * s * 0.7, cy); g.lineTo(cx + sx * s * 1.05, cy - s * 0.5); g.stroke();
+      for (const k of [0.35, 0.6]) { g.beginPath(); g.moveTo(cx + sx * s * 0.8, cy + s * k); g.lineTo(cx + sx * s * 1.2, cy + s * (k + 0.25)); g.stroke(); }
+    }
+    g.fillStyle = '#ff6b5e';
+    for (const sx of [-1, 1]) { g.beginPath(); g.arc(cx + sx * s * 1.05, cy - s * 0.62, s * 0.34, 0, TAU); g.fill(); }
+    g.beginPath(); g.ellipse(cx, cy + s * 0.18, s, s * 0.74, 0, 0, TAU); g.fill();
+    face(g, cx, cy + s * 0.14, s, s * 0.36, -s * 0.12);
+  } else if (type === 'jelly') {
+    g.strokeStyle = '#b48cff'; g.lineWidth = s * 0.15;
+    for (let i = -1.5; i <= 1.5; i++) {
+      const x = cx + i * s * 0.42;
+      g.beginPath(); g.moveTo(x, cy + s * 0.15);
+      g.quadraticCurveTo(x + s * 0.22, cy + s * 0.55, x, cy + s * 0.8);
+      g.quadraticCurveTo(x - s * 0.18, cy + s * 1.0, x, cy + s * 1.18); g.stroke();
+    }
+    g.fillStyle = '#cfb0ff';
+    g.beginPath(); g.arc(cx, cy + s * 0.15, s * 0.98, Math.PI, 0); g.closePath(); g.fill();
+    face(g, cx, cy, s, s * 0.34, -s * 0.38);
+  } else {
+    g.fillStyle = '#ffa53d'; g.strokeStyle = '#ffa53d'; g.lineWidth = s * 0.3;
+    g.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? s * 0.5 : s * 1.08;
+      g[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * r, cy + s * 0.08 + Math.sin(a) * r);
+    }
+    g.closePath(); g.fill(); g.stroke();
+    face(g, cx, cy + s * 0.1, s, s * 0.3, -s * 0.12);
+  }
+  g.restore();
+}
+let swimmers = [], motes = [];
+function newSwimmer(anywhere) {
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  return { dir, s: rand(10, 20), x: anywhere ? rand(0, W) : (dir > 0 ? -44 : W + 44), y: rand(H * 0.12, H * 0.8),
+    v: rand(20, 50), ph: rand(0, TAU), col: FISH_COLS[Math.floor(Math.random() * FISH_COLS.length)] };
+}
+function seedSea() {
+  swimmers = []; motes = [];
+  const n = W < 600 ? 4 : 8;
+  for (let i = 0; i < n; i++) swimmers.push(newSwimmer(true));
+  const m = Math.round(clamp(W * H / 15000, 18, 64));
+  for (let i = 0; i < m; i++) motes.push({ x: rand(0, W), y: rand(0, H), r: rand(1.5, 5), v: rand(30, 80), ph: rand(0, TAU) });
+}
+function updateSea(dt) {
+  for (const f of swimmers) { f.x += f.dir * f.v * dt; if (f.x < -60 || f.x > W + 60) Object.assign(f, newSwimmer(false)); }
+  for (const m of motes) { m.y -= m.v * dt; if (m.y < -8) { m.y = H + 8; m.x = rand(0, W); } }
+}
+function drawSea() {
+  for (const f of swimmers) {
+    const y = f.y + Math.sin(T * 1.3 + f.ph) * 6, wag = reduced ? 0 : Math.sin(T * 7 + f.ph) * 0.35, s = f.s;
+    ctx.save(); ctx.translate(f.x, y); ctx.scale(f.dir, 1); ctx.globalAlpha = 0.62;
+    ctx.fillStyle = f.col;
+    ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.62, 0, 0, TAU); ctx.fill();
+    ctx.save(); ctx.translate(-s * 0.85, 0); ctx.rotate(wag);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-s * 0.8, -s * 0.55); ctx.lineTo(-s * 0.8, s * 0.55); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#14283c'; ctx.beginPath(); ctx.arc(s * 0.45, -s * 0.12, s * 0.13, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 0.42, -s * 0.16, s * 0.05, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.fillStyle = 'rgba(255,255,255,0.10)';
+  for (const m of motes) {
+    ctx.beginPath(); ctx.arc(m.x + Math.sin(T * 1.5 + m.ph) * 4, m.y, m.r, 0, TAU); ctx.fill(); ctx.stroke();
+  }
+}
+
+/* ================= Audio ================= */
+let actx = null, soundOn = store('bb_sound') !== '0';
+function unlockAudio() {
+  try {
+    if (!actx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) actx = new AC();
+    }
+    if (actx && actx.state === 'suspended') actx.resume();
+  } catch (e) {}
+}
+function tone(f0, f1, dur, vol, delay) {
+  if (!soundOn || !actx) return;
+  try {
+    const t = actx.currentTime + (delay || 0);
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.7);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  } catch (e) {}
+}
+let noiseBuf = null;
+function noise(vol) {                              // short burst of filtered noise: the wet 'pop'
+  if (!soundOn || !actx) return;
+  try {
+    if (!noiseBuf) {
+      const n = Math.floor(actx.sampleRate * 0.06);
+      noiseBuf = actx.createBuffer(1, n, actx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+    }
+    const src = actx.createBufferSource(), g = actx.createGain(), f = actx.createBiquadFilter();
+    src.buffer = noiseBuf; f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 0.8; g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(actx.destination); src.start();
+  } catch (e) {}
+}
+const POP_NOTES = [523.25, 587.33, 659.25, 783.99, 880];
+const sfx = {
+  pop: m => { noise(0.5); tone(POP_NOTES[m - 1] * 1.5, POP_NOTES[m - 1] * 0.45, 0.1, 0.2); },
+  lose: () => tone(233, 155, 0.34, 0.16),
+  reply: () => { tone(659, 700, 0.3, 0.1); tone(880, 930, 0.3, 0.09, 0.07); tone(1175, 1240, 0.42, 0.08, 0.14); }
+};
+function setSound(on) {
+  soundOn = on;
+  el.sound.classList.toggle('off', !on);
+  el.sound.setAttribute('aria-pressed', on ? 'true' : 'false');
+  el.soundLabel.textContent = on ? 'Sound on' : 'Sound off';
+}
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+/* ================= Spawning ================= */
+function nextFrom(bagRef, source) {
+  if (!bagRef.length) {
+    bagRef.push(...source);
+    for (let i = bagRef.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [bagRef[i], bagRef[j]] = [bagRef[j], bagRef[i]];
+    }
+  }
+  return bagRef.pop();
+}
+
+function softCap() {
+  if (state !== 'play') return 7;
+  return Math.min(MAX_BUBBLES, 6 + level);   // keeps the opening sparse
+}
+
+function trySpawn(forceKind) {
+  if (bubbles.length >= MAX_BUBBLES) return false;
+  if (!forceKind && bubbles.length >= softCap()) return false;
+  const kind = forceKind || (Math.random() < Math.min(0.34, 0.14 + level * 0.025) ? 'gold' : 'buzz');
+  const b = {
+    kind, d: Math.round(rand(MIN_D, MAX_D)), tint: TINT_KEYS[Math.floor(Math.random() * TINT_KEYS.length)],
+    text: kind === 'reply' ? 'REPLY ALL' : kind === 'gold' ? nextFrom(plainBag, PLAIN) : nextFrom(bag, BUZZWORDS),
+    vm: rand(0.9, 1.12), amp: rand(6, 14), freq: rand(0.7, 1.3), phase: rand(0, Math.PI * 2), t: 0, dead: false, popAt: null
+  };
+  if (kind === 'reply') b.d = 108;
+  if (kind === 'gold') { b.d = Math.round(rand(98, 118)); b.critter = CRITTERS[Math.floor(Math.random() * CRITTERS.length)]; b.amp = rand(34, 60); b.freq = rand(1.6, 2.6); b.vm = rand(1.15, 1.5); }
+  layoutBubble(b);
+  const y = H + b.r + 4;
+  const edge = b.r + b.amp + 6;
+  const lo = edge, hi = Math.max(edge, W - edge);
+  let x = null;
+  for (let i = 0; i < 16 && x === null; i++) {
+    const cx = rand(lo, hi);
+    let ok = true;
+    if (kind !== 'gold') for (const o of bubbles) {
+      if (o.kind === 'gold') continue;
+      const need = b.r + o.r + b.amp + o.amp + 8;
+      const dx = cx - o.x0, dy = y - o.y;
+      if (dx * dx + dy * dy < need * need) { ok = false; break; }
+    }
+    if (ok) x = cx;
+  }
+  if (x === null) return false;
+  b.x0 = x; b.x = x; b.y = y;
+  makeSprite(b);
+  bubbles.push(b);
+  return true;
+}
+
+/* ================= Game flow ================= */
+function setDifficulty() {
+  interval = Math.max(MIN_INTERVAL, START_INTERVAL * Math.pow(0.88, level - 1));
+  speed = Math.min(MAX_SPEED, START_SPEED * Math.pow(1.18, level - 1));
+}
+
+function updateHud() {
+  el.score.textContent = score;
+  el.lives.forEach((n, i) => n.classList.toggle('lost', i >= lives));
+  el.mult.textContent = '×' + mult;
+}
+
+function startGame() {
+  unlockAudio();
+  for (const b of bubbles) pops.push({ x: b.x, y: b.y, size: b.size, sprite: b.sprite, t: 0, dur: 0.3 });
+  bubbles = []; rings = []; drops = []; floats = []; shards = []; shake = 0;
+  score = 0; lives = 3; streak = 0; mult = 1; level = 1;
+  playT = 0; spawnT = 0.35; replyT = rand(17, 23); vignette = 0;
+  setDifficulty(); updateHud();
+  state = 'play';
+  el.start.classList.remove('show');
+  el.over.classList.remove('show');
+  el.hud.classList.add('show');
+  el.level.classList.remove('show');
+}
+
+function rankFor(s) {
+  let r = RANKS[0][1];
+  for (const [min, name] of RANKS) if (s >= min) r = name;
+  return r;
+}
+
+function gameOver() {
+  state = 'over';
+  for (const b of bubbles) b.popAt = null;
+  if (score > best) { best = score; store('bb_best', String(best)); }
+  el.finalScore.textContent = score;
+  el.rank.textContent = rankFor(score);
+  el.finalLevel.textContent = level;
+  el.best.textContent = best;
+  el.copy.textContent = 'Copy score';
+  overTimer = 0.75;
+}
+
+function loseLife(msg, x, y) {
+  if (state !== 'play') return;
+  floats.push({ text: msg, x: clamp(x, 120, Math.max(120, W - 120)), y, t: 0 });
+  lives--; streak = 0; mult = 1; vignette = 1;
+  sfx.lose(); buzz(40);
+  updateHud();
+  if (lives <= 0) gameOver();
+}
+
+function showLevel() {
+  el.level.textContent = 'Level ' + level + ' · faster';
+  el.level.classList.add('show');
+  levelTimer = 1.8;
+}
+
+function popEffects(b) {
+  pops.push({ x: b.x, y: b.y, size: b.size, sprite: b.sprite, t: 0, dur: 0.15, grow: true });
+  rings.push({ x: b.x, y: b.y, r0: b.r, r1: b.r * 1.55, t: 0, dur: 0.45, w: 1.2, a: 0.6 });
+  if (reduced) return;
+  shake = Math.min(7, shake + 3);
+  if (b.kind === 'buzz') {                       // the word itself shatters into falling letters
+    const chars = b.text.replace(/\s/g, '').slice(0, 22).split(''), fs = b.fit ? b.fit.fs + 2 : 16;
+    chars.forEach((ch, i) => shards.push({ ch, fs,
+      x: b.x + (chars.length > 1 ? i / (chars.length - 1) - 0.5 : 0) * b.r * 1.5, y: b.y + rand(-8, 8),
+      vx: rand(-150, 150), vy: -rand(80, 260), rot: 0, vr: rand(-9, 9), t: 0, dur: rand(0.55, 0.9) }));
+  }
+  const col = b.kind === 'buzz' ? TINTS[b.tint] : b.kind === 'gold' ? [255,226,122] : [255,255,255];
+  const n = 12 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, Math.PI * 2);
+    drops.push({
+      x: b.x + Math.cos(a) * b.r * 0.75, y: b.y + Math.sin(a) * b.r * 0.75,
+      vx: Math.cos(a) * rand(60, 220), vy: Math.sin(a) * rand(50, 190) - 40,
+      r: rand(1.6, 3.6), t: 0, dur: rand(0.5, 0.8), col
+    });
+  }
+}
+
+function popBubble(b) {
+  if (b.dead || state !== 'play') return;
+  b.dead = true;
+  popEffects(b);
+  if (b.kind === 'buzz') {
+    score += mult;
+    sfx.pop(mult); buzz(18);
+    if (mult > 1) floats.push({ text: '+' + mult, x: b.x, y: b.y - b.r * 0.4, t: 0.7, good: true });
+    el.score.style.transform = 'scale(1.16)'; setTimeout(() => { el.score.style.transform = ''; }, 90);
+    streak++;
+    mult = Math.min(5, 1 + Math.floor(streak / 10));
+    updateHud();
+  } else if (b.kind === 'gold') {
+    loseLife('Oops, a sea friend! −1 life', b.x, b.y);
+  } else {
+    sfx.reply(); buzz(20);
+    const far = Math.hypot(Math.max(b.x, W - b.x), Math.max(b.y, H - b.y));
+    rings.push({ x: b.x, y: b.y, r0: b.r, r1: far, t: 0, dur: far / 900, w: 1.5, a: 0.5 });
+    for (const o of bubbles) {
+      if (o.kind === 'buzz' && !o.dead) o.popAt = T + Math.hypot(o.x - b.x, o.y - b.y) / 900;
+    }
+  }
+}
+
+/* ================= Input ================= */
+const ptrs = new Map();
+function hitAt(x, y) {
+  if (state !== 'play') return;
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    if (b.dead) continue;
+    const dx = x - b.x, dy = y - b.y, rr = b.r + 4;
+    if (dx * dx + dy * dy <= rr * rr) popBubble(b);
+  }
+}
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  unlockAudio();
+  if (state !== 'play') return;
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  hitAt(e.clientX, e.clientY);
+});
+cv.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId);
+  if (!p) return;
+  e.preventDefault();
+  const dx = e.clientX - p.x, dy = e.clientY - p.y;
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 10));
+  for (let i = 1; i <= steps; i++) hitAt(p.x + dx * i / steps, p.y + dy * i / steps);
+  p.x = e.clientX; p.y = e.clientY;
+});
+const endPtr = e => ptrs.delete(e.pointerId);
+cv.addEventListener('pointerup', endPtr);
+cv.addEventListener('pointercancel', endPtr);
+cv.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+
+$('playBtn').addEventListener('click', startGame);
+$('againBtn').addEventListener('click', startGame);
+el.sound.addEventListener('click', () => {
+  unlockAudio();
+  setSound(!soundOn);
+  store('bb_sound', soundOn ? '1' : '0');
+  if (soundOn) sfx.pop(1);
+});
+el.copy.addEventListener('click', () => {
+  const text = `I scored ${score} in Buzzword Bubbles (level ${level}) and made "${rankFor(score)}". Circle back when you can beat that.`;
+  const done = ok => {
+    el.copy.textContent = ok ? 'Copied' : 'Copy failed';
+    setTimeout(() => { el.copy.textContent = 'Copy score'; }, 1600);
+  };
+  const fallback = () => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-999px;top:0;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove(); done(ok);
+    } catch (e) { done(false); }
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), fallback);
+    else fallback();
+  } catch (e) { fallback(); }
+});
+
+/* ================= Loop ================= */
+function update(dt) {
+  T += dt;
+  updateSea(dt);
+  let rise = speed;
+  if (state === 'play') {
+    playT += dt;
+    const L = 1 + Math.floor(playT / LEVEL_SECONDS);
+    if (L !== level) { level = L; setDifficulty(); showLevel(); rise = speed; }
+    spawnT -= dt;
+    if (spawnT <= 0) spawnT = trySpawn() ? interval : 0.1;
+    replyT -= dt;
+    if (replyT <= 0) replyT = trySpawn('reply') ? rand(17, 23) : 0.3;
+  } else {
+    rise = reduced ? 22 : 36;                 // slow drift behind the cards
+    spawnT -= dt;
+    if (spawnT <= 0) spawnT = trySpawn() ? 1.9 : 0.3;
+    if (overTimer > 0 && (overTimer -= dt) <= 0) {
+      el.hud.classList.remove('show');
+      el.over.classList.add('show');
+    }
+  }
+  if (levelTimer > 0 && (levelTimer -= dt) <= 0) el.level.classList.remove('show');
+  if (vignette > 0) vignette = Math.max(0, vignette - dt / 0.6);
+
+  for (const b of bubbles) {
+    if (b.dead) continue;
+    b.t += dt;
+    b.y -= rise * (b.vm || 1) * dt;
+    b.x = b.x0 + (reduced ? 0 : Math.sin(b.t * b.freq + b.phase) * b.amp);
+    if (b.popAt !== null && T >= b.popAt) { popBubble(b); continue; }
+    if (b.y + b.r < 0) {
+      b.dead = true;
+      if (b.kind === 'buzz') loseLife('One got away! −1 life', b.x, 76);
+    }
+  }
+  bubbles = bubbles.filter(b => !b.dead);
+
+  for (const p of pops) p.t += dt;
+  pops = pops.filter(p => p.t < p.dur);
+  for (const r of rings) r.t += dt;
+  rings = rings.filter(r => r.t < r.dur);
+  for (const d of drops) {
+    d.t += dt; d.vy += 520 * dt;
+    d.x += d.vx * dt; d.y += d.vy * dt;
+  }
+  drops = drops.filter(d => d.t < d.dur);
+  for (const f of floats) { f.t += dt; f.y -= 22 * dt; }
+  floats = floats.filter(f => f.t < 1.6);
+  for (const p of shards) { p.t += dt; p.vy += 900 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; }
+  shards = shards.filter(p => p.t < p.dur);
+  shake = Math.max(0, shake - 28 * dt);
+}
+
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(bgCanvas, 0, 0, cv.width, cv.height);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawSea();
+  if (shake > 0.2) ctx.translate(rand(-shake, shake), rand(-shake, shake));
+
+  for (const b of bubbles) {
+    if (b.kind === 'reply') {
+      const pulse = reduced ? 0.8 : 0.7 + 0.3 * Math.sin(T * 3.2);
+      const gs = b.d * 2.1;
+      ctx.globalAlpha = pulse;
+      ctx.drawImage(glowSprite, b.x - gs / 2, b.y - gs / 2, gs, gs);
+      ctx.globalAlpha = 1;
+    }
+    ctx.drawImage(b.sprite, b.x - b.size / 2, b.y - b.size / 2, b.size, b.size);
+  }
+
+  for (const p of pops) {
+    const k = p.t / p.dur;
+    const s = p.size * (p.grow && !reduced ? 1 + 0.16 * k : 1);
+    ctx.globalAlpha = 1 - k;
+    ctx.drawImage(p.sprite, p.x - s / 2, p.y - s / 2, s, s);
+  }
+  for (const r of rings) {
+    const k = r.t / r.dur, e = 1 - (1 - k) * (1 - k);
+    ctx.globalAlpha = r.a * (1 - k);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = r.w;
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r0 + (r.r1 - r.r0) * e, 0, Math.PI * 2); ctx.stroke();
+  }
+  for (const d of drops) {
+    ctx.globalAlpha = 0.85 * (1 - d.t / d.dur);
+    ctx.fillStyle = `rgb(${d.col[0]},${d.col[1]},${d.col[2]})`;
+    ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+  for (const p of shards) {
+    ctx.globalAlpha = 1 - p.t / p.dur;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    ctx.font = '600 ' + p.fs + 'px ' + SANS; ctx.fillText(p.ch, 0, 0); ctx.restore();
+  }
+  ctx.font = '600 19px ' + SERIF; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  for (const f of floats) {
+    ctx.globalAlpha = Math.min(1, (1.6 - f.t) * 1.6);
+    ctx.lineWidth = 5; ctx.strokeStyle = f.good ? 'rgba(4,58,110,0.9)' : 'rgba(190,30,60,0.92)';
+    ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = '#fff'; ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+
+  if (vignette > 0) {
+    const R = Math.hypot(W, H) / 2;
+    const vg = ctx.createRadialGradient(W / 2, H / 2, R * 0.45, W / 2, H / 2, R);
+    vg.addColorStop(0, 'rgba(214,60,84,0)');
+    vg.addColorStop(1, `rgba(214,60,84,${0.42 * vignette * vignette})`);
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  }
+}
+
+let last = 0;
+function frame(ts) {
+  const dt = last ? Math.min(0.05, Math.max(0, (ts - last) / 1000)) : 0;
+  last = ts;
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+
+/* ================= Resize & boot ================= */
+function resize() {
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+  if (d !== DPR) {
+    DPR = d;
+    buildBaseSprites();
+    bubbles.forEach(makeSprite);
+  }
+  buildBackground();
+  seedSea();
+  for (const b of bubbles) {
+    const edge = b.r + b.amp + 6;
+    b.x0 = clamp(b.x0, edge, Math.max(edge, W - edge));
+  }
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+
+function refreshText() {            // web fonts arrived: re-measure and redraw labels
+  for (const b of bubbles) { layoutBubble(b); makeSprite(b); }
+}
+try {
+  if (document.fonts && document.fonts.load) {
+    Promise.all([
+      document.fonts.load('500 16px "Instrument Sans"'),
+      document.fonts.load('600 16px "Instrument Sans"'),
+      document.fonts.load('500 20px "Fredoka"')
+    ]).then(refreshText, () => {});
+  }
+} catch (e) {}
+
+setSound(soundOn);
+resize();
+// A few bubbles already adrift behind the start card.
+for (let i = 0; i < 4; i++) {
+  if (trySpawn()) { const b = bubbles[bubbles.length - 1]; b.y = H * (0.25 + 0.22 * i) + rand(-20, 20); }
+}
+spawnT = 1;
+requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
